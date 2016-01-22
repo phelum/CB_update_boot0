@@ -19,7 +19,7 @@ load these details but I haven't found any other programs that do so.
 
 This program is primarily used to customise boot0 before writing it to NAND.
 
-The run command is update_boot0 <boot0 file ID> <script file ID> NAND [NAND chip ID].
+The run command is update_boot0 &lt;boot0 file ID&gt; &lt;script file ID&gt; NAND [NAND chip ID].
 
 e.g. update_boot0  boot0.bin  script.bin  NAND  ADD794DA
 
