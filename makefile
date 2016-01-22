@@ -1,10 +1,10 @@
 
-
-objects = check.o script.o update_boot0.o
+common  = check.o script.o
+objects = $(common) update_boot0.o
 
 
 edit:$(objects)
-	gcc -o update_boot0 $(objects)
+	gcc -o update_boot0 $(common) update_boot0.o
 	rm -rf $(objects)
 
 

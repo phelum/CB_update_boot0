@@ -24,7 +24,7 @@
 *  <Author>        <time>       <version>      <description>
 *
 * Gary.Wang      2009.05.21       1.1.0        build the file
-* S J Saunderson 2016-01-17       1.1.0        build version 1 from v2 file
+* S J Saunderson 2016-01-21       1.1.0        dram_para [20] (was [32])
 *
 ************************************************************************************************************************
 */

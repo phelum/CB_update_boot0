@@ -647,12 +647,14 @@ __s32 _SearchNandArchi(__u8 *pNandID, struct __NandPhyInfoPar_t *pNandArchInfo)
 }
 
 
-int     LoadNandInfo    (void *boot0_buf, char *nand_chip_id)
+int     LoadNandInfo    (void *boot0_buf, int boot_version, char *nand_chip_id)
   {
         __u8                        NandID [8], *pChar, *pID;
         int                         x, digit;
         struct __NandPhyInfoPar_t   NandArchInfo;
-        boot_nand_para_v1_t         *bnp;
+        boot_file_head_t            *bh;
+        boot_nand_para_v1_t         *bnp1;
+        boot_nand_para_v2_t         *bnp2;
 
     memset (NandID, 0xFF, 8);
     for (pChar = nand_chip_id, x = 0; x < 16; pChar++)
@@ -691,28 +693,56 @@ int     LoadNandInfo    (void *boot0_buf, char *nand_chip_id)
     if (0 != _SearchNandArchi (NandID, &NandArchInfo))
         printf ("Error: NAND chip ID not found in table.\n");
     else
-      {
-        bnp = (boot_nand_para_v1_t*)&((boot0_file_head_t*) boot0_buf)->prvt_head.storage_data;
-        bnp->ChipCnt                = 1;
-        bnp->ChipConnectInfo        = 0x01;
-        bnp->RbCnt                  = 1;
-        bnp->RbConnectInfo          = 1;
-        bnp->RbConnectMode          = 1;
-        bnp->BankCntPerChip         = 1;
-        bnp->DieCntPerChip          = NandArchInfo.DieCntPerChip;
-        bnp->PlaneCountPerDie       = 2;
-        bnp->SectorCountPerPage     = NandArchInfo.SectCntPerPage;
-        bnp->PageCountPerPhyBlk     = NandArchInfo.PageCntPerBlk;
-        bnp->BlockCountPerDie       = NandArchInfo.BlkCntPerDie;
-        bnp->OperationOpt           = NandArchInfo.OperationOpt;
-        bnp->FrequencePar           = NandArchInfo.AccessFreq;
-        bnp->EccMode                = NandArchInfo.EccMode;
-        memcpy (bnp->NandChipID, NandID, 8);
-        bnp->ValidBlockRatio        = NandArchInfo.ValidBlkRatio;
-        bnp->GoodBlockRatio         = NandArchInfo.ValidBlkRatio;
-        bnp->ReadRetryType          = NandArchInfo.ReadRetryType;
-        bnp->DDRType                = NandArchInfo.DDRType;
-      }
+        if (boot_version == 1)
+          {
+            bh  = (boot_file_head_t*)    &((boot0_file_head_t*) boot0_buf)->boot_head;
+            bnp1 = (boot_nand_para_v1_t*) &((boot0_file_head_t*) boot0_buf)->prvt_head.storage_data;
+            bnp1->ChipCnt               = 1;
+            bnp1->ChipConnectInfo       = 0x01;
+            bnp1->RbCnt                 = 1;
+            bnp1->RbConnectInfo         = 1;
+            bnp1->RbConnectMode         = 1;
+            bnp1->BankCntPerChip        = 1;
+            bnp1->DieCntPerChip         = NandArchInfo.DieCntPerChip;
+            bnp1->PlaneCountPerDie      = 2;
+            bnp1->SectorCountPerPage    = NandArchInfo.SectCntPerPage;
+            bnp1->PageCountPerPhyBlk    = NandArchInfo.PageCntPerBlk;
+            bnp1->BlockCountPerDie      = NandArchInfo.BlkCntPerDie;
+            bnp1->OperationOpt          = NandArchInfo.OperationOpt;
+            bnp1->FrequencePar          = NandArchInfo.AccessFreq;
+            bnp1->EccMode               = NandArchInfo.EccMode;
+            memcpy (bnp1->NandChipID, NandID, 8);
+            bnp1->ValidBlockRatio       = NandArchInfo.ValidBlkRatio;
+            bnp1->GoodBlockRatio        = NandArchInfo.ValidBlkRatio;
+            bnp1->ReadRetryType         = NandArchInfo.ReadRetryType;
+            bnp1->DDRType               = NandArchInfo.DDRType;
+            bh->platform [7]            = 1; // 0: try dram para; 1: read dram para from head.
+          }
+        else
+          {
+            bh  = (boot_file_head_t*)    &((boot0_file_head_t*) boot0_buf)->boot_head;
+            bnp2 = (boot_nand_para_v2_t*) &((boot0_file_head_t*) boot0_buf)->prvt_head.storage_data;
+            bnp2->ChipCnt               = 1;
+            bnp2->ChipConnectInfo       = 0x01;
+            bnp2->RbCnt                 = 1;
+            bnp2->RbConnectInfo         = 1;
+            bnp2->RbConnectMode         = 1;
+            bnp2->BankCntPerChip        = 1;
+            bnp2->DieCntPerChip         = NandArchInfo.DieCntPerChip;
+            bnp2->PlaneCountPerDie      = 2;
+            bnp2->SectorCountPerPage    = NandArchInfo.SectCntPerPage;
+            bnp2->PageCountPerPhyBlk    = NandArchInfo.PageCntPerBlk;
+            bnp2->BlockCountPerDie      = NandArchInfo.BlkCntPerDie;
+            bnp2->OperationOpt          = NandArchInfo.OperationOpt;
+            bnp2->FrequencePar          = NandArchInfo.AccessFreq;
+            bnp2->EccMode               = NandArchInfo.EccMode;
+            memcpy (bnp2->NandChipID, NandID, 8);
+            bnp2->ValidBlockRatio       = NandArchInfo.ValidBlkRatio;
+            bnp2->GoodBlockRatio        = NandArchInfo.ValidBlkRatio;
+            bnp2->ReadRetryType         = NandArchInfo.ReadRetryType;
+            bnp2->DDRType               = NandArchInfo.DDRType;
+            bh->platform [7]            = 1; // 0: try dram para; 1: read dram para from head.
+          }
 
     return 0;
   }
@@ -727,6 +757,7 @@ int update_for_boot0 (char *boot0_name, int storage_type, char *nand_chip_id)
 	int                 i, array_size;
 	int                 ret = -1;
 	int                 value[8];
+    int                 boot_version;
     script_gpio_set_t   gpio_set[32];
 
 	boot0_file = fopen(boot0_name, "rb+");
@@ -764,9 +795,10 @@ int update_for_boot0 (char *boot0_name, int storage_type, char *nand_chip_id)
     for (i = 0; i < 8; i++)
         if (boot0_head->boot_head.platform [i] > '\0')
             break;
-    if (boot0_head->boot_head.platform [i] != '1')
+    boot_version = atoi (&boot0_head->boot_head.platform [i]);
+    if ((boot_version < 1) || (boot_version > 2))
       {
-		printf("update: this program expects boot0 version 1.\n");
+		printf("update: unexpected boot version %s.\n", &boot0_head->boot_head.platform [i]);
 		goto _err_boot0_out;
 	  }
 
@@ -888,11 +920,12 @@ int update_for_boot0 (char *boot0_name, int storage_type, char *nand_chip_id)
     //  Load NAND chip details if chip ID supplied.
 
     if (nand_chip_id)
-        LoadNandInfo (boot0_buf, nand_chip_id);
+        LoadNandInfo (boot0_buf, boot_version, nand_chip_id);
 
-    strncpy (boot0_head->boot_head.file_head_vsn,       BOOT_PUB_HEAD_VERSION, 4);
-    strncpy (boot0_head->boot_head.Boot_vsn,            BOOT_PUB_HEAD_VERSION, 4);
-    strncpy ((char*) &boot0_head->boot_head.boot_cpu,   EGON_VERSION, 4);
+//      What should go here (version 1 and version 2).
+//  strncpy (boot0_head->boot_head.file_head_vsn,       BOOT_PUB_HEAD_VERSION, 4);
+//  strncpy (boot0_head->boot_head.Boot_vsn,            BOOT_PUB_HEAD_VERSION, 4);
+//  strncpy ((char*) &boot0_head->boot_head.boot_cpu,   EGON_VERSION, 4);
 
 	gen_check_sum( (void *)boot0_buf );
 
